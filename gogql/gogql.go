@@ -48,7 +48,7 @@ func (g *GraphqlClient) ExecuteGraphqlIter(r GraphQlRequest, call func(*goson.Ar
 	index := 0
 	total := 0
 	for {
-		log.Info().Msgf("running for offset %v", offset)
+		log.Debug().Msgf("running for offset %v", offset)
 		payload := strings.ReplaceAll(g.AsGqlPayload(r.Graphql), "${OFFSET}", fmt.Sprintf("%v", offset))
 		if r.Limit > 0 {
 			payload = strings.ReplaceAll(payload, "${LIMIT}", fmt.Sprintf("%v", r.Limit))
@@ -124,6 +124,15 @@ func (g *GraphqlClient) ExecuteGraphQL(payload string) ([]byte, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err,
 			"error exec http request with url=[%v] and payload=[%v]", g.Url, payload)
+	}
+	if resp.StatusCode != 200 {
+		respBytes, _ := io.ReadAll(resp.Body)
+		respStr := ""
+		if len(respBytes) > 0 {
+			respStr = string(respBytes)
+		}
+		return nil, errors.Errorf("Response code of %v received from url=[%v] and payload=[%v]. "+
+			"The response headers are %v and body is [%v]", resp.StatusCode, g.Url, payload, resp.Header, respStr)
 	}
 	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
