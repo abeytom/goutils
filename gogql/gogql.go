@@ -43,6 +43,60 @@ func (g *GraphqlClient) AsGqlPayload(gql string) string {
 	return string(marshal)
 }
 
+func ExecuteGraphqlItrSimple[T any](client *GraphqlClient, resultNameKey string, graphql string, d time.Duration) ([]T, error) {
+	// why client is an arg -> instance methods doesn't support generics :D
+	start, end := TimeRangeLastX(d)
+	request := GraphQlRequest{
+		ResultKeys: []string{"data", resultNameKey, "results"},
+		TotalKeys:  []string{"data", resultNameKey, "total"},
+		CountKeys:  []string{"data", resultNameKey, "count"},
+		Graphql:    graphql,
+		Limit:      10000,
+		Max:        100000,
+		StartTime:  start,
+		EndTime:    end,
+	}
+	var items []T
+	err := client.ExecuteGraphqlIter(request, func(results *goson.ArrayNode) error {
+		for _, result := range results.ItemsAsMap() {
+			var t T
+			//
+			err := TreeToValue(result.Object, &t)
+			if err != nil {
+				log.Err(err).Msgf("cannot convert the [%v] to [%v]", result, t)
+				continue
+			}
+			items = append(items, t)
+		}
+		return nil
+	})
+	return items, err
+}
+
+func (g *GraphqlClient) ExecuteGraphqlItrCallback(resultNameKey string, graphql string, d time.Duration, conv func(node *goson.MapNode) error) error {
+	// why client is an arg -> instance methods doesn't support generics :D
+	start, end := TimeRangeLastX(d)
+	request := GraphQlRequest{
+		ResultKeys: []string{"data", resultNameKey, "results"},
+		TotalKeys:  []string{"data", resultNameKey, "total"},
+		CountKeys:  []string{"data", resultNameKey, "count"},
+		Graphql:    graphql,
+		Limit:      10000,
+		Max:        100000,
+		StartTime:  start,
+		EndTime:    end,
+	}
+	return g.ExecuteGraphqlIter(request, func(results *goson.ArrayNode) error {
+		for _, result := range results.ItemsAsMap() {
+			err := conv(result)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
 func (g *GraphqlClient) ExecuteGraphqlIter(r GraphQlRequest, call func(*goson.ArrayNode) error) error {
 	offset := r.offset
 	index := 0
@@ -151,4 +205,12 @@ func TimeRangeLastX(duration time.Duration) (string, string) {
 	now := time.Now()
 	startMillis := now.UnixMilli() - duration.Milliseconds()
 	return time.UnixMilli(startMillis).Format(time.RFC3339), now.Format(time.RFC3339)
+}
+
+func TreeToValue[T any](result interface{}, t *T) error {
+	b, err := json.Marshal(result)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(b, t)
 }
