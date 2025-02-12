@@ -3,8 +3,10 @@ package gocsv
 import (
 	"encoding/csv"
 	"fmt"
+	"github.com/abeytom/goutils/gofile"
 	"github.com/pkg/errors"
 	"os"
+	"path/filepath"
 )
 
 func GetColumnIndexOrPanic(records [][]string, k string) int {
@@ -48,4 +50,19 @@ func ReadAllCsv(fp string) ([][]string, error) {
 		return nil, err
 	}
 	return records, nil
+}
+
+func NewCsvWriter(fp string) (*os.File, *csv.Writer, error) {
+	parent := filepath.Dir(fp)
+	if !gofile.IsDir(parent) {
+		err := os.MkdirAll(parent, 0755)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "cannot create dir [%v]", parent)
+		}
+	}
+	f, err := os.Create(fp)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "cannot open the file [%v]", fp)
+	}
+	return f, csv.NewWriter(f), nil
 }
