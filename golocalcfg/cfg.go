@@ -10,6 +10,14 @@ import (
 
 type LocalConfig map[string]interface{}
 
+func LoadDefaultCfgOrPanic() LocalConfig {
+	cfg, err := LoadDefaultCfg()
+	if err != nil {
+		panic(err)
+	}
+	return cfg
+}
+
 func LoadDefaultCfg() (LocalConfig, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -21,6 +29,7 @@ func LoadDefaultCfg() (LocalConfig, error) {
 func LoadCfg(basedir string) (LocalConfig, error) {
 	configPath := filepath.Join(basedir, ".config/.local-config.yml")
 	if !gofile.IsFile(configPath) {
+		fmt.Printf("[ERROR] config file not found at %v\n", configPath)
 		return map[string]interface{}{}, nil
 	}
 

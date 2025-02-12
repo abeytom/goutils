@@ -52,7 +52,7 @@ func ExecuteGraphqlItrSimple[T any](client *GraphqlClient, resultNameKey string,
 		CountKeys:  []string{"data", resultNameKey, "count"},
 		Graphql:    graphql,
 		Limit:      10000,
-		Max:        100000,
+		Max:        1000000,
 		StartTime:  start,
 		EndTime:    end,
 	}
@@ -74,7 +74,6 @@ func ExecuteGraphqlItrSimple[T any](client *GraphqlClient, resultNameKey string,
 }
 
 func (g *GraphqlClient) ExecuteGraphqlItrCallback(resultNameKey string, graphql string, d time.Duration, conv func(node *goson.MapNode) error) error {
-	// why client is an arg -> instance methods doesn't support generics :D
 	start, end := TimeRangeLastX(d)
 	request := GraphQlRequest{
 		ResultKeys: []string{"data", resultNameKey, "results"},
@@ -82,7 +81,7 @@ func (g *GraphqlClient) ExecuteGraphqlItrCallback(resultNameKey string, graphql 
 		CountKeys:  []string{"data", resultNameKey, "count"},
 		Graphql:    graphql,
 		Limit:      10000,
-		Max:        100000,
+		Max:        1000000,
 		StartTime:  start,
 		EndTime:    end,
 	}
