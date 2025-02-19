@@ -213,3 +213,18 @@ func TreeToValue[T any](result interface{}, t *T) error {
 	}
 	return json.Unmarshal(b, t)
 }
+
+type GraphqlQuery struct {
+	Query string `json:"query"`
+}
+
+func NewGraphqlQuery(query string) *GraphqlQuery {
+	return &GraphqlQuery{
+		Query: query,
+	}
+}
+
+func (q *GraphqlQuery) Set(variable string, value string) *GraphqlQuery {
+	q.Query = strings.ReplaceAll(q.Query, "${"+variable+"}", value)
+	return q
+}
